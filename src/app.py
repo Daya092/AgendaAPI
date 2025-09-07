@@ -6,9 +6,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 
 # Importar Blueprints
-from Controllers.usuarios_controller import usuario_bp
-from Controllers.tipos_controller import tipo_bp
-from Controllers.movimientos_controller import movimiento_bp
+from controllers.usuarios_controller import usuario_bp
+from controllers.tipos_controller import tipo_bp
+from controllers.movimientos_controller import movimiento_bp
 
 # Importar base de datos y modelos
 from Config.database import engine
