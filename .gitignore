@@ -1,0 +1,18 @@
+# Archivos de Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configuración local
+.env
+
+# Archivos de logs
+*.log
+
+# Archivos de pruebas o temporales (como los que generas con curl)
+*.json
+*.txt
+
+# Carpeta de IDE/Editor
+.vscode/
