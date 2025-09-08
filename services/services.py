@@ -1,5 +1,3 @@
-# services/services.py
-
 # -----------------------
 # Usuarios en memoria
 # -----------------------
@@ -10,8 +8,7 @@ def get_all_usuarios():
     return usuarios
 
 def get_usuario_by_id(usuario_id):
-    usuario = next((u for u in usuarios if u["id"] == usuario_id), None)
-    return usuario
+    return next((u for u in usuarios if u["id"] == usuario_id), None)
 
 def create_usuario(data):
     global next_usuario_id
@@ -40,41 +37,19 @@ def delete_usuario(usuario_id):
     return False
 
 # -----------------------
-# Tipos en memoria
+# Tipos fijos
 # -----------------------
-tipos = []
-next_tipo_id = 1
+tipos = [
+    {"id": 1, "nombre": "Ingresos"},
+    {"id": 2, "nombre": "Gastos"},
+    {"id": 3, "nombre": "Total"}
+]
 
 def get_all_tipos():
     return tipos
 
 def get_tipo_by_id(tipo_id):
-    tipo = next((t for t in tipos if t["id"] == tipo_id), None)
-    return tipo
-
-def create_tipo(data):
-    global next_tipo_id
-    tipo = {
-        "id": next_tipo_id,
-        "nombre": data.get("nombre")
-    }
-    tipos.append(tipo)
-    next_tipo_id += 1
-    return tipo
-
-def update_tipo(tipo_id, data):
-    for t in tipos:
-        if t["id"] == tipo_id:
-            t["nombre"] = data.get("nombre", t["nombre"])
-            return t
-    return None
-
-def delete_tipo(tipo_id):
-    global tipos
-    if any(t["id"] == tipo_id for t in tipos):
-        tipos = [t for t in tipos if t["id"] != tipo_id]
-        return True
-    return False
+    return next((t for t in tipos if t["id"] == tipo_id), None)
 
 # -----------------------
 # Movimientos en memoria
@@ -86,8 +61,7 @@ def get_all_movimientos():
     return movimientos
 
 def get_movimiento_by_id(movimiento_id):
-    mov = next((m for m in movimientos if m["id"] == movimiento_id), None)
-    return mov
+    return next((m for m in movimientos if m["id"] == movimiento_id), None)
 
 def create_movimiento(data):
     global next_movimiento_id
@@ -118,3 +92,4 @@ def delete_movimiento(movimiento_id):
         movimientos = [m for m in movimientos if m["id"] != movimiento_id]
         return True
     return False
+

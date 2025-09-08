@@ -11,26 +11,26 @@ def get_movimientos():
 
 @movimiento_bp.route('/movimientos/<int:mov_id>', methods=['GET'])
 def get_movimiento(mov_id):
-    mov = get_movimiento_by_id(mov_id)
-    if mov is None:
+    m = get_movimiento_by_id(mov_id)
+    if not m:
         return jsonify({'error': 'Movimiento not found'}), 404
-    return jsonify(mov), 200
+    return jsonify(m), 200
 
 @movimiento_bp.route('/movimientos', methods=['POST'])
 def create_movimiento_route():
-    if not request.json or 'monto' not in request.json or 'descripcion' not in request.json:
+    if not request.json or 'tipo_id' not in request.json or 'usuario_id' not in request.json or 'monto' not in request.json:
         return jsonify({'error': 'Bad request'}), 400
-    mov = create_movimiento(request.json)
-    return jsonify(mov), 201
+    m = create_movimiento(request.json)
+    return jsonify(m), 201
 
 @movimiento_bp.route('/movimientos/<int:mov_id>', methods=['PUT'])
 def update_movimiento_route(mov_id):
     if not request.json:
         return jsonify({'error': 'Bad request'}), 400
-    mov = update_movimiento(mov_id, request.json)
-    if mov is None:
+    m = update_movimiento(mov_id, request.json)
+    if not m:
         return jsonify({'error': 'Movimiento not found'}), 404
-    return jsonify(mov), 200
+    return jsonify(m), 200
 
 @movimiento_bp.route('/movimientos/<int:mov_id>', methods=['DELETE'])
 def delete_movimiento_route(mov_id):
@@ -38,3 +38,4 @@ def delete_movimiento_route(mov_id):
     if not success:
         return jsonify({'error': 'Movimiento not found'}), 404
     return jsonify({'result': 'Movimiento deleted'}), 200
+

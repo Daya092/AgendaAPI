@@ -33,3 +33,26 @@ curl -i -X DELETE http://localhost:5000/usuarios/1
 # 9. Eliminar un usuario inexistente (ejemplo: 99)
 curl -i -X DELETE http://localhost:5000/usuarios/99
 
+
+# 10. verificar tipos de gasto
+curl -i http://localhost:5000/tipos
+
+#11. crear un movimiento
+curl -i -X POST http://localhost:5000/movimientos \
+  -H "Content-Type: application/json" \
+  -d '{"tipo_id": 1, "usuario_id": 1, "monto": 1500, "descripcion": "Pago de proyecto"}'
+
+#12. verificar movimientos creados
+curl -i http://localhost:5000/movimientos
+
+#13.obtener movimiento por id
+curl -i http://localhost:5000/movimientos/1
+
+#14. Actualizar un movimiento
+curl -i -X PUT http://localhost:5000/movimientos/1 \
+  -H "Content-Type: application/json" \
+  -d '{"monto": 2000, "descripcion": "Pago actualizado"}'
+
+#15. Eliminar un movimiento
+curl -i -X DELETE http://localhost:5000/movimientos/1
+
