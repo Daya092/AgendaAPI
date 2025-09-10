@@ -1,7 +1,7 @@
 import sys
 import os
 from flask import Flask
-
+from services.services import init_default_tipos
 # ------------------------------
 # Configurar el path del proyecto
 # ------------------------------
@@ -19,7 +19,7 @@ from controllers.movimientos_controller import movimiento_bp
 # Crear la app Flask
 # ------------------------------
 app = Flask(__name__)
-
+init_default_tipos()
 # ------------------------------
 # Registrar los Blueprints
 # ------------------------------
