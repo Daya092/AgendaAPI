@@ -5,6 +5,17 @@ from sqlalchemy.orm import joinedload
 # -------------------------
 # USUARIOS
 # -------------------------
+def init_default_tipos():
+    session = SessionLocal()
+    defaults = ["Ingreso", "Gasto"]
+    for name in defaults:
+        tipo = session.query(TipoMovi).filter(TipoMovi.name == name).first()
+        if not tipo:
+            session.add(TipoMovi(name=name))
+    session.commit()
+    session.close()
+
+
 def get_all_usuarios():
     session = SessionLocal()
     usuarios = session.query(Usuario).options(joinedload(Usuario.movimientos)).all()
@@ -111,15 +122,7 @@ def delete_usuario(usuario_id):
 # -------------------------
 # TIPOS
 # -------------------------
-def init_default_tipos():
-    session = SessionLocal()
-    defaults = ["Ingreso", "Gasto"]
-    for name in defaults:
-        tipo = session.query(TipoMovi).filter(TipoMovi.name == name).first()
-        if not tipo:
-            session.add(TipoMovi(name=name))
-    session.commit()
-    session.close()
+
 
 
 def get_all_tipos():
@@ -218,5 +221,5 @@ def update_movimiento(movimiento_id, data):
         'fecha': movimiento.fecha.isoformat() if movimiento.fecha else None,
         'usuario_id': movimiento.usuario_id,
         'tipo_id': movimiento.tipo_id
-
+    }
 
