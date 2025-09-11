@@ -109,18 +109,30 @@ def get_movimiento_by_id(mov_id):
     session.close()
     return result
 
+from datetime import datetime
+
 def create_movimiento(data):
     session = SessionLocal()
+
+    # Si viene como string, la parseamos
+    fecha_str = data.get("fecha")
+    if fecha_str:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    else:
+        fecha = datetime.utcnow().date()
+
     m = Movimiento(
         monto=data["monto"],
         descripcion=data.get("descripcion"),
-        fecha=data["fecha"],
+        fecha=fecha,
         usuario_id=data["usuario_id"],
         tipo_id=data["tipo_id"]
     )
     session.add(m)
     session.commit()
-    result = {
+    session.refresh(m)
+    session.close()
+    return {
         "id": m.id,
         "monto": m.monto,
         "descripcion": m.descripcion,
@@ -128,8 +140,7 @@ def create_movimiento(data):
         "usuario_id": m.usuario_id,
         "tipo_id": m.tipo_id
     }
-    session.close()
-    return result
+
 
 def update_movimiento(mov_id, data):
     session = SessionLocal()
