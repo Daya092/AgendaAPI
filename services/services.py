@@ -1,225 +1,185 @@
-from Config.database import SessionLocal
-from Models.agenda import Usuario, TipoMovi, Movimiento
-from sqlalchemy.orm import joinedload
+from config.database import SessionLocal
+from models.agenda import Usuario, Movimiento, TipoMovi
 
-# -------------------------
-# USUARIOS
-# -------------------------
-def init_default_tipos():
-    session = SessionLocal()
-    defaults = ["Ingreso", "Gasto"]
-    for name in defaults:
-        tipo = session.query(TipoMovi).filter(TipoMovi.name == name).first()
-        if not tipo:
-            session.add(TipoMovi(name=name))
-    session.commit()
-    session.close()
-
-
+# ------------------- USUARIOS -------------------
 def get_all_usuarios():
     session = SessionLocal()
-    usuarios = session.query(Usuario).options(joinedload(Usuario.movimientos)).all()
+    usuarios = session.query(Usuario).all()
     result = []
     for u in usuarios:
         result.append({
-            'id': u.id,
-            'name': u.name,
-            'telefono': u.telefono,
-            'correo': u.correo,
-            'movimientos': [
-                {
-                    'id': m.id,
-                    'monto': m.monto,
-                    'descripcion': m.descripcion,
-                    'fecha': m.fecha.isoformat() if m.fecha else None,
-                    'tipo': m.tipo.name if m.tipo else None
-                }
-                for m in u.movimientos
-            ]
+            "id": u.id,
+            "name": u.name,
+            "telefono": u.telefono,
+            "correo": u.correo
         })
     session.close()
     return result
 
-
 def get_usuario_by_id(usuario_id):
     session = SessionLocal()
-    u = session.query(Usuario).options(joinedload(Usuario.movimientos)).filter(Usuario.id == usuario_id).first()
+    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
     if u:
         result = {
-            'id': u.id,
-            'name': u.name,
-            'telefono': u.telefono,
-            'correo': u.correo,
-            'movimientos': [
-                {
-                    'id': m.id,
-                    'monto': m.monto,
-                    'descripcion': m.descripcion,
-                    'fecha': m.fecha.isoformat() if m.fecha else None,
-                    'tipo': m.tipo.name if m.tipo else None
-                }
-                for m in u.movimientos
-            ]
+            "id": u.id,
+            "name": u.name,
+            "telefono": u.telefono,
+            "correo": u.correo
         }
     else:
         result = None
     session.close()
     return result
 
-
 def create_usuario(data):
     session = SessionLocal()
-    usuario = Usuario(
-        name=data['name'],
-        telefono=data.get('telefono'),
-        correo=data['correo']
-    )
-    session.add(usuario)
+    u = Usuario(name=data["name"], correo=data["correo"], telefono=data.get("telefono"))
+    session.add(u)
     session.commit()
     result = {
-        'id': usuario.id,
-        'name': usuario.name,
-        'telefono': usuario.telefono,
-        'correo': usuario.correo,
-        'movimientos': []
+        "id": u.id,
+        "name": u.name,
+        "telefono": u.telefono,
+        "correo": u.correo
     }
     session.close()
     return result
-
 
 def update_usuario(usuario_id, data):
     session = SessionLocal()
-    usuario = session.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not usuario:
+    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not u:
         session.close()
         return None
-    usuario.name = data.get('name', usuario.name)
-    usuario.telefono = data.get('telefono', usuario.telefono)
-    usuario.correo = data.get('correo', usuario.correo)
+    u.name = data.get("name", u.name)
+    u.correo = data.get("correo", u.correo)
+    u.telefono = data.get("telefono", u.telefono)
     session.commit()
     result = {
-        'id': usuario.id,
-        'name': usuario.name,
-        'telefono': usuario.telefono,
-        'correo': usuario.correo
+        "id": u.id,
+        "name": u.name,
+        "telefono": u.telefono,
+        "correo": u.correo
     }
     session.close()
     return result
 
-
 def delete_usuario(usuario_id):
     session = SessionLocal()
-    usuario = session.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not usuario:
+    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not u:
         session.close()
         return False
-    session.delete(usuario)
+    session.delete(u)
     session.commit()
     session.close()
     return True
 
-
-# -------------------------
-# TIPOS
-# -------------------------
-
-
-
-def get_all_tipos():
-    session = SessionLocal()
-    tipos = session.query(TipoMovi).options(joinedload(TipoMovi.movimientos)).all()
-    result = []
-    for t in tipos:
-        result.append({
-            'id': t.id,
-            'name': t.name,
-            'movimientos': [m.id for m in t.movimientos]
-        })
-    session.close()
-    return result
-
-
-
-
-# -------------------------
-# MOVIMIENTOS
-# -------------------------
+# ------------------- MOVIMIENTOS -------------------
 def get_all_movimientos():
     session = SessionLocal()
-    movimientos = session.query(Movimiento).options(joinedload(Movimiento.usuario), joinedload(Movimiento.tipo)).all()
+    movimientos = session.query(Movimiento).all()
     result = []
     for m in movimientos:
         result.append({
-            'id': m.id,
-            'monto': m.monto,
-            'descripcion': m.descripcion,
-            'fecha': m.fecha.isoformat() if m.fecha else None,
-            'usuario': m.usuario.name if m.usuario else None,
-            'tipo': m.tipo.name if m.tipo else None
+            "id": m.id,
+            "monto": m.monto,
+            "descripcion": m.descripcion,
+            "fecha": str(m.fecha),
+            "usuario_id": m.usuario_id,
+            "tipo_id": m.tipo_id
         })
     session.close()
     return result
 
-
-def get_movimiento_by_id(movimiento_id):
+def get_movimiento_by_id(mov_id):
     session = SessionLocal()
-    m = session.query(Movimiento).options(joinedload(Movimiento.usuario), joinedload(Movimiento.tipo)).filter(Movimiento.id == movimiento_id).first()
+    m = session.query(Movimiento).filter(Movimiento.id == mov_id).first()
     if m:
         result = {
-            'id': m.id,
-            'monto': m.monto,
-            'descripcion': m.descripcion,
-            'fecha': m.fecha.isoformat() if m.fecha else None,
-            'usuario': m.usuario.name if m.usuario else None,
-            'tipo': m.tipo.name if m.tipo else None
+            "id": m.id,
+            "monto": m.monto,
+            "descripcion": m.descripcion,
+            "fecha": str(m.fecha),
+            "usuario_id": m.usuario_id,
+            "tipo_id": m.tipo_id
         }
     else:
         result = None
     session.close()
     return result
 
-
 def create_movimiento(data):
     session = SessionLocal()
-    movimiento = Movimiento(
-        monto=data['monto'],
-        descripcion=data.get('descripcion'),
-        fecha=data['fecha'],
-        usuario_id=data['usuario_id'],
-        tipo_id=data['tipo_id']
+    m = Movimiento(
+        monto=data["monto"],
+        descripcion=data.get("descripcion"),
+        fecha=data["fecha"],
+        usuario_id=data["usuario_id"],
+        tipo_id=data["tipo_id"]
     )
-    session.add(movimiento)
+    session.add(m)
     session.commit()
     result = {
-        'id': movimiento.id,
-        'monto': movimiento.monto,
-        'descripcion': movimiento.descripcion,
-        'fecha': movimiento.fecha.isoformat() if movimiento.fecha else None,
-        'usuario_id': movimiento.usuario_id,
-        'tipo_id': movimiento.tipo_id
+        "id": m.id,
+        "monto": m.monto,
+        "descripcion": m.descripcion,
+        "fecha": str(m.fecha),
+        "usuario_id": m.usuario_id,
+        "tipo_id": m.tipo_id
     }
     session.close()
     return result
 
-
-def update_movimiento(movimiento_id, data):
+def update_movimiento(mov_id, data):
     session = SessionLocal()
-    movimiento = session.query(Movimiento).filter(Movimiento.id == movimiento_id).first()
-    if not movimiento:
+    m = session.query(Movimiento).filter(Movimiento.id == mov_id).first()
+    if not m:
         session.close()
         return None
-    movimiento.monto = data.get('monto', movimiento.monto)
-    movimiento.descripcion = data.get('descripcion', movimiento.descripcion)
-    movimiento.fecha = data.get('fecha', movimiento.fecha)
-    movimiento.usuario_id = data.get('usuario_id', movimiento.usuario_id)
-    movimiento.tipo_id = data.get('tipo_id', movimiento.tipo_id)
+    m.monto = data.get("monto", m.monto)
+    m.descripcion = data.get("descripcion", m.descripcion)
+    m.fecha = data.get("fecha", m.fecha)
+    m.usuario_id = data.get("usuario_id", m.usuario_id)
+    m.tipo_id = data.get("tipo_id", m.tipo_id)
     session.commit()
     result = {
-        'id': movimiento.id,
-        'monto': movimiento.monto,
-        'descripcion': movimiento.descripcion,
-        'fecha': movimiento.fecha.isoformat() if movimiento.fecha else None,
-        'usuario_id': movimiento.usuario_id,
-        'tipo_id': movimiento.tipo_id
+        "id": m.id,
+        "monto": m.monto,
+        "descripcion": m.descripcion,
+        "fecha": str(m.fecha),
+        "usuario_id": m.usuario_id,
+        "tipo_id": m.tipo_id
     }
+    session.close()
+    return result
 
+def delete_movimiento(mov_id):
+    session = SessionLocal()
+    m = session.query(Movimiento).filter(Movimiento.id == mov_id).first()
+    if not m:
+        session.close()
+        return False
+    session.delete(m)
+    session.commit()
+    session.close()
+    return True
+
+# ------------------- TIPOS -------------------
+def get_all_tipos():
+    session = SessionLocal()
+    tipos = session.query(TipoMovi).all()
+    session.close()
+    return [{"id": t.id, "name": t.name} for t in tipos]
+
+
+# Inicializar tipos por defecto (para app.py)
+def init_default_tipos():
+    session = SessionLocal()
+    defaults = ["Ingreso", "Gasto", "Transferencia"]
+    for name in defaults:
+        existe = session.query(TipoMovi).filter(TipoMovi.name == name).first()
+        if not existe:
+            session.add(TipoMovi(name=name))
+    session.commit()
+    session.close()

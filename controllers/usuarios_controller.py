@@ -18,16 +18,18 @@ def get_usuario(usuario_id):
 
 @usuario_bp.route('/usuarios', methods=['POST'])
 def create_usuario_route():
-    if not request.json or 'nombre' not in request.json or 'email' not in request.json:
+    data = request.get_json()
+    if not data or 'name' not in data or 'correo' not in data:
         return jsonify({'error': 'Bad request'}), 400
-    usuario = create_usuario(request.json)
+    usuario = create_usuario(data)
     return jsonify(usuario), 201
 
 @usuario_bp.route('/usuarios/<int:usuario_id>', methods=['PUT'])
 def update_usuario_route(usuario_id):
-    if not request.json:
+    data = request.get_json()
+    if not data:
         return jsonify({'error': 'Bad request'}), 400
-    usuario = update_usuario(usuario_id, request.json)
+    usuario = update_usuario(usuario_id, data)
     if usuario is None:
         return jsonify({'error': 'Usuario not found'}), 404
     return jsonify(usuario), 200

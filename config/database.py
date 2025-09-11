@@ -5,7 +5,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
-from Models.agenda import Base
+from models.agenda import Base
 from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO)
 
