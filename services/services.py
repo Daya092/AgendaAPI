@@ -1,109 +1,130 @@
-from config.database import SessionLocal
-from models.agenda import Usuario, Movimiento, TipoMovi
-from werkzeug.security import generate_password_hash, check_password_hash
+import sys
+import os
+
+# Asegurar que el directorio padre (workspace) esté en sys.path para poder importar "config"
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
+
 from datetime import datetime
+import logging
+from typing import Optional, Dict, List
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import Session
+from config.database import SessionLocal
+from models.agenda import Usuario, Movimiento, TipoMovi  # importa modelos reales que uses
 
-# ------------------- USUARIOS -------------------
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-def get_all_usuarios():
-    session = SessionLocal()
-    usuarios = session.query(Usuario).all()
-    result = []
-    for u in usuarios:
-        result.append({
-            "id": u.id,
-            "name": u.name,
-            "telefono": u.telefono,
-            "correo": u.correo
-        })
-    session.close()
-    return result
+def _usuario_to_dict(u: Usuario) -> Dict:
+    return {
+        "id": u.id,
+        "name": getattr(u, "name", None),
+        "correo": getattr(u, "correo", None),
+        "telefono": getattr(u, "telefono", None),
+    }
 
+def get_all_usuarios() -> List[Dict]:
+    db: Session = SessionLocal()
+    try:
+        usuarios = db.query(Usuario).all()
+        return [_usuario_to_dict(u) for u in usuarios]
+    finally:
+        db.close()
 
-def get_usuario_by_id(usuario_id):
-    session = SessionLocal()
-    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if u:
-        result = {
-            "id": u.id,
-            "name": u.name,
-            "telefono": u.telefono,
-            "correo": u.correo
-        }
-    else:
-        result = None
-    session.close()
-    return result
+def get_usuario_by_id(usuario_id: int) -> Optional[Dict]:
+    db: Session = SessionLocal()
+    try:
+        u = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+        return _usuario_to_dict(u) if u else None
+    finally:
+        db.close()
 
+def create_usuario(data: Dict) -> Dict:
+    """
+    data esperado: {'name','correo','password', 'telefono'(opcional)}
+    """
+    db: Session = SessionLocal()
+    try:
+        if db.query(Usuario).filter(Usuario.correo == data.get("correo")).first():
+            raise ValueError("El correo ya está registrado")
 
-def authenticate_user(username, password):
-    """Verifica si el usuario y contraseña son válidos."""
-    session = SessionLocal()
-    user = session.query(Usuario).filter(Usuario.name == username).first()
-    if user and check_password_hash(user.password, password):
-        session.close()
+        hashed = generate_password_hash(data["password"])
+        nuevo = Usuario(
+            name=data.get("name"),
+            correo=data.get("correo"),
+            telefono=data.get("telefono", ""),
+            password=hashed,
+        )
+        db.add(nuevo)
+        db.commit()
+        db.refresh(nuevo)
+        logger.info(f"Usuario creado: {nuevo.correo}")
+        return _usuario_to_dict(nuevo)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+def update_usuario(usuario_id: int, updates: Dict) -> Optional[Dict]:
+    db: Session = SessionLocal()
+    try:
+        u = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+        if not u:
+            return None
+        if "name" in updates:
+            u.name = updates["name"]
+        if "correo" in updates:
+            u.correo = updates["correo"]
+        if "telefono" in updates:
+            u.telefono = updates["telefono"]
+        if "password" in updates and updates["password"]:
+            u.password = generate_password_hash(updates["password"])
+        db.commit()
+        db.refresh(u)
+        return _usuario_to_dict(u)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+def delete_usuario(usuario_id: int) -> Optional[Dict]:
+    db: Session = SessionLocal()
+    try:
+        u = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+        if not u:
+            return None
+        db.delete(u)
+        db.commit()
+        return _usuario_to_dict(u)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+def authenticate_user(identifier: str, password: str) -> Optional[Usuario]:
+    """
+    identifier puede ser nombre (name) o correo.
+    Devuelve la instancia Usuario si las credenciales son válidas, o None.
+    """
+    db: Session = SessionLocal()
+    try:
+        # primero por correo
+        user = db.query(Usuario).filter(Usuario.correo == identifier).first()
+        if not user:
+            # luego por name
+            user = db.query(Usuario).filter(Usuario.name == identifier).first()
+        if not user:
+            return None
+        if not check_password_hash(user.password, password):
+            return None
         return user
-    session.close()
-    return None
-
-
-def create_usuario(data):
-    """Crea un usuario nuevo con contraseña cifrada."""
-    session = SessionLocal()
-    hashed_pw = generate_password_hash(data["password"])  # 🔒 cifrado seguro
-    u = Usuario(
-        name=data["name"],
-        correo=data["correo"],
-        telefono=data.get("telefono"),
-        password=hashed_pw
-    )
-    session.add(u)
-    session.commit()
-    session.refresh(u)
-    result = {
-        "id": u.id,
-        "name": u.name,
-        "telefono": u.telefono,
-        "correo": u.correo
-    }
-    session.close()
-    return result
-
-
-def update_usuario(usuario_id, data):
-    session = SessionLocal()
-    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not u:
-        session.close()
-        return None
-    u.name = data.get("name", u.name)
-    u.correo = data.get("correo", u.correo)
-    u.telefono = data.get("telefono", u.telefono)
-    if "password" in data:  # Si desea actualizar contraseña
-        u.password = generate_password_hash(data["password"])
-    session.commit()
-    result = {
-        "id": u.id,
-        "name": u.name,
-        "telefono": u.telefono,
-        "correo": u.correo
-    }
-    session.close()
-    return result
-
-
-def delete_usuario(usuario_id):
-    session = SessionLocal()
-    u = session.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not u:
-        session.close()
-        return False
-    session.delete(u)
-    session.commit()
-    session.close()
-    return True
-
-# ------------------- MOVIMIENTOS -------------------
+    finally:
+        db.close()
 
 def get_all_movimientos():
     session = SessionLocal()
