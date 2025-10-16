@@ -1,18 +1,19 @@
 # Importamos lo necesario de SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
+from config.database import Base  # ← Usar la misma Base de database.py
 
-# Base principal para declarar los modelos
-Base = declarative_base()
+# ELIMINA esta línea - ya existe en database.py
+# Base = declarative_base()
 
 # Modelo para la tabla de usuarios
 class Usuario(Base):
     __tablename__ = "usuarios"
-
-    id = Column(Integer, primary_key=True, index=True)      # ID único del usuario
-    name = Column(String(255), nullable=False)              # Nombre del usuario
-    telefono = Column(String(50), nullable=True)            # Teléfono (opcional)
-    correo = Column(String(255), nullable=False, unique=True) # Correo (obligatorio y único)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    correo = Column(String(100), unique=True, nullable=False)
+    telefono = Column(String(20))
+    password = Column(String(255), nullable=False) 
 
     # Relación con movimientos (un usuario puede tener muchos movimientos)
     movimientos = relationship("Movimiento", back_populates="usuario")
@@ -45,4 +46,3 @@ class Movimiento(Base):
     # Relaciones hacia Usuario y TipoMovi
     usuario = relationship("Usuario", back_populates="movimientos")
     tipo = relationship("TipoMovi", back_populates="movimientos")
-

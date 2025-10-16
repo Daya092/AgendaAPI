@@ -1,7 +1,10 @@
 from config.database import SessionLocal
 from models.agenda import Usuario, Movimiento, TipoMovi
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 # ------------------- USUARIOS -------------------
+
 def get_all_usuarios():
     session = SessionLocal()
     usuarios = session.query(Usuario).all()
@@ -15,6 +18,7 @@ def get_all_usuarios():
         })
     session.close()
     return result
+
 
 def get_usuario_by_id(usuario_id):
     session = SessionLocal()
@@ -31,11 +35,31 @@ def get_usuario_by_id(usuario_id):
     session.close()
     return result
 
-def create_usuario(data):
+
+def authenticate_user(username, password):
+    """Verifica si el usuario y contraseña son válidos."""
     session = SessionLocal()
-    u = Usuario(name=data["name"], correo=data["correo"], telefono=data.get("telefono"))
+    user = session.query(Usuario).filter(Usuario.name == username).first()
+    if user and check_password_hash(user.password, password):
+        session.close()
+        return user
+    session.close()
+    return None
+
+
+def create_usuario(data):
+    """Crea un usuario nuevo con contraseña cifrada."""
+    session = SessionLocal()
+    hashed_pw = generate_password_hash(data["password"])  # 🔒 cifrado seguro
+    u = Usuario(
+        name=data["name"],
+        correo=data["correo"],
+        telefono=data.get("telefono"),
+        password=hashed_pw
+    )
     session.add(u)
     session.commit()
+    session.refresh(u)
     result = {
         "id": u.id,
         "name": u.name,
@@ -44,6 +68,7 @@ def create_usuario(data):
     }
     session.close()
     return result
+
 
 def update_usuario(usuario_id, data):
     session = SessionLocal()
@@ -54,6 +79,8 @@ def update_usuario(usuario_id, data):
     u.name = data.get("name", u.name)
     u.correo = data.get("correo", u.correo)
     u.telefono = data.get("telefono", u.telefono)
+    if "password" in data:  # Si desea actualizar contraseña
+        u.password = generate_password_hash(data["password"])
     session.commit()
     result = {
         "id": u.id,
@@ -63,6 +90,7 @@ def update_usuario(usuario_id, data):
     }
     session.close()
     return result
+
 
 def delete_usuario(usuario_id):
     session = SessionLocal()
@@ -76,6 +104,7 @@ def delete_usuario(usuario_id):
     return True
 
 # ------------------- MOVIMIENTOS -------------------
+
 def get_all_movimientos():
     session = SessionLocal()
     movimientos = session.query(Movimiento).all()
@@ -91,6 +120,7 @@ def get_all_movimientos():
         })
     session.close()
     return result
+
 
 def get_movimiento_by_id(mov_id):
     session = SessionLocal()
@@ -109,12 +139,10 @@ def get_movimiento_by_id(mov_id):
     session.close()
     return result
 
-from datetime import datetime
 
 def create_movimiento(data):
     session = SessionLocal()
 
-    # Si viene como string, la parseamos
     fecha_str = data.get("fecha")
     if fecha_str:
         fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
@@ -165,6 +193,7 @@ def update_movimiento(mov_id, data):
     session.close()
     return result
 
+
 def delete_movimiento(mov_id):
     session = SessionLocal()
     m = session.query(Movimiento).filter(Movimiento.id == mov_id).first()
@@ -177,6 +206,7 @@ def delete_movimiento(mov_id):
     return True
 
 # ------------------- TIPOS -------------------
+
 def get_all_tipos():
     session = SessionLocal()
     tipos = session.query(TipoMovi).all()
@@ -184,7 +214,6 @@ def get_all_tipos():
     return [{"id": t.id, "name": t.name} for t in tipos]
 
 
-# Inicializar tipos por defecto (para app.py)
 def init_default_tipos():
     session = SessionLocal()
     defaults = ["Ingreso", "Gasto", "Transferencia"]
