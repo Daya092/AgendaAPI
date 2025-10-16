@@ -18,6 +18,18 @@ try:
 except Exception:
     jwt_conf = None
 
+# Importar y registrar blueprints/handlers de controladores
+from controllers.usuarios_controller import usuario_bp, register_jwt_error_handlers
+# Si existen, puedes registrar también tipo_bp y movimiento_bp
+try:
+    from controllers.tipos_controller import tipo_bp
+except Exception:
+    tipo_bp = None
+try:
+    from controllers.movimientos_controller import movimiento_bp
+except Exception:
+    movimiento_bp = None
+
 app = Flask(__name__)
 
 # Configuración JWT: preferir variable de entorno, luego config.jwt, luego valores por defecto
@@ -37,6 +49,16 @@ app.config["JWT_HEADER_TYPE"] = getattr(jwt_conf, "JWT_HEADER_TYPE", "Bearer") i
 
 # Inicializar JWT
 jwt = JWTManager(app)
+
+# Registrar blueprints
+app.register_blueprint(usuario_bp)
+if tipo_bp:
+    app.register_blueprint(tipo_bp)
+if movimiento_bp:
+    app.register_blueprint(movimiento_bp)
+
+# Registrar manejadores de errores JWT
+register_jwt_error_handlers(app)
 
 # Crear tablas DESPUÉS de importar todos los modelos
 Base.metadata.create_all(bind=engine)

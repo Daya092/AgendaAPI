@@ -1,5 +1,12 @@
-# Importamos lo necesario de SQLAlchemy
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+import sys
+import os
+
+# Asegurar que la raíz del workspace esté en sys.path para poder importar config.*
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
+
+from sqlalchemy import Column, Integer, String, DateTime, Float, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from config.database import Base  # ← Usar la misma Base de database.py
 
@@ -10,10 +17,10 @@ from config.database import Base  # ← Usar la misma Base de database.py
 class Usuario(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    correo = Column(String(100), unique=True, nullable=False)
-    telefono = Column(String(20))
-    password = Column(String(255), nullable=False) 
+    name = Column(String, nullable=False)
+    correo = Column(String, unique=True, nullable=False)
+    telefono = Column(String, nullable=True)
+    password = Column(String, nullable=True)  # <- asegurar que exista
 
     # Relación con movimientos (un usuario puede tener muchos movimientos)
     movimientos = relationship("Movimiento", back_populates="usuario")
