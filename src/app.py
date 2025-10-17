@@ -11,13 +11,12 @@ from datetime import timedelta
 from config.database import engine, Base, SessionLocal
 from models.agenda import Usuario, Movimiento, TipoMovi
 
-# SOLUCIÓN: Crear tablas SIEMPRE, sin importar el proceso
+# SOLUCIÓN: Crear tablas SIEMPRE
 def inicializar_bd():
     print("Verificando/Creando tablas...")
     Base.metadata.create_all(bind=engine)
     print("Base de datos lista")
 
-# Ejecutar inmediatamente
 inicializar_bd()
 
 try:
@@ -25,15 +24,11 @@ try:
 except Exception:
     jwt_conf = None
 
+# IMPORTAR TODOS LOS BLUEPRINTS
 from controllers.usuarios_controller import usuario_bp, register_jwt_error_handlers
-try:
-    from controllers.tipos_controller import tipo_bp
-except Exception:
-    tipo_bp = None
-try:
-    from controllers.movimientos_controller import movimiento_bp
-except Exception:
-    movimiento_bp = None
+from controllers.movimientos_controller import movimiento_bp
+from controllers.tipos_controller import tipo_bp
+from services.services import init_default_tipos
 
 app = Flask(__name__)
 
@@ -52,11 +47,13 @@ app.config["JWT_HEADER_TYPE"] = getattr(jwt_conf, "JWT_HEADER_TYPE", "Bearer") i
 
 jwt = JWTManager(app)
 
+# REGISTRAR TODOS LOS BLUEPRINTS
 app.register_blueprint(usuario_bp)
-if tipo_bp:
-    app.register_blueprint(tipo_bp)
-if movimiento_bp:
-    app.register_blueprint(movimiento_bp)
+app.register_blueprint(movimiento_bp)
+app.register_blueprint(tipo_bp)
+
+# Inicializar tipos por defecto
+init_default_tipos()
 
 register_jwt_error_handlers(app)
 
@@ -65,7 +62,6 @@ def health_check():
     return jsonify({"status": "OK", "message": "AgendaAPI funcionando"})
 
 if __name__ == '__main__':
-    # También crear tablas aquí por si acaso
     inicializar_bd()
     print("Iniciando servidor...")
     app.run(debug=True, host='0.0.0.0', port=5000)

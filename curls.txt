@@ -65,6 +65,58 @@ curl -X DELETE http://localhost:5000/api/usuarios/1 \
 # 3) Instala jq si quieres extraer tokens automáticamente:
 #    sudo apt update && sudo apt install -y jq
 
+Creacion de movimientos 
+######CREAR MOVIMIENTOS DE PRUEBA
+Movimiento de INGRESO:
 
-usurer 1
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2MDY1ODM2MiwianRpIjoiYWIwNWM0YmItZjE2NS00YTNiLTk2NTktNDk3YWEwNzM4NzU0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NjA2NTgzNjIsImNzcmYiOiJhMzhmMjE0ZS01MTQxLTQzMDQtOGY3OS01MGFhMmYyZjM3ZDQiLCJleHAiOjE3NjA2NjE5NjJ9.IencWUW9okSGFp3ARFAwtcdUbmzC5jYeTmgl6uVSZCk
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 1500.50,
+    "descripcion": "Salario mensual",
+    "tipo_id": 1,
+    "fecha": "2024-10-16"
+  }'
+Movimiento de GASTO:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 250.75,
+    "descripcion": "Compra supermercado",
+    "tipo_id": 2,
+    "fecha": "2024-10-15"
+  }'
+Otro ingreso:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 300.00,
+    "descripcion": "Freelance",
+    "tipo_id": 1,
+    "fecha": "2024-10-14"
+  }'
+3. VERIFICAR QUE SE CREARON
+bash
+# Ver todos los movimientos
+curl -X GET http://127.0.0.1:5000/api/movimientos \
+  -H "Authorization: Bearer $TOKEN"
+
+# Ver resumen financiero
+curl -X GET http://127.0.0.1:5000/api/resumen \
+  -H "Authorization: Bearer $TOKEN"
+
+
+####consultas 
+# Ver movimientos
+curl -X GET http://127.0.0.1:5000/api/movimientos -H "Authorization: Bearer $TOKEN"
+
+# Ver tipos
+curl -X GET http://127.0.0.1:5000/api/tipos -H "Authorization: Bearer $TOKEN"
