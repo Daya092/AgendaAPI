@@ -70,7 +70,7 @@ def get_usuario(usuario_id):
     logger.info(f"Consulta de usuario por ID: {usuario_id}")
     return jsonify(usuario), 200
 
-
+#crear usuario 
 @usuario_bp.route("/usuarios", methods=["POST"])
 def create_usuario_route():
     data = request.get_json(silent=True)
