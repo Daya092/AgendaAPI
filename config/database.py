@@ -1,16 +1,18 @@
-
-
 import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
-from models.agenda import Base
 from dotenv import load_dotenv
+
 logging.basicConfig(level=logging.INFO)
 
 # Cargar variables de entorno desde .env
 load_dotenv()
+
+# Crear Base PRIMERO, sin imports de modelos
+Base = declarative_base()
 
 MYSQL_URI = os.getenv('MYSQL_URI')
 SQLITE_URI = 'sqlite:///agenda_local.db'
@@ -35,8 +37,12 @@ def get_engine():
 
 engine = get_engine()
 Session = sessionmaker(bind=engine)
-Base.metadata.create_all(engine)
+
+# IMPORTANTE: Quitar esta línea de aquí y ponerla en app.py
+# Base.metadata.create_all(engine)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 def get_db_session():
     """
     Retorna una nueva sesión de base de datos para ser utilizada en los servicios o controladores.

@@ -1,44 +1,68 @@
 import sys
 import os
-from flask import Flask
 
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
-# Configurar el path del proyecto
+from flask import Flask, jsonify
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
+from config.database import engine, Base, SessionLocal
+from models.agenda import Usuario, Movimiento, TipoMovi
 
-# Permite que Python encuentre los módulos controllers, services, etc.
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# SOLUCIÓN: Crear tablas SIEMPRE
+def inicializar_bd():
+    print("Verificando/Creando tablas...")
+    Base.metadata.create_all(bind=engine)
+    print("Base de datos lista")
 
+inicializar_bd()
 
-# Importar base de datos y modelos
+try:
+    import config.jwt as jwt_conf
+except Exception:
+    jwt_conf = None
 
-from config.database import engine
-from models.agenda import Base
-
-# Importar Blueprints y servicios
-
-from controllers.usuarios_controller import usuario_bp
-from controllers.tipos_controller import tipo_bp
+# IMPORTAR TODOS LOS BLUEPRINTS
+from controllers.usuarios_controller import usuario_bp, register_jwt_error_handlers
 from controllers.movimientos_controller import movimiento_bp
+from controllers.tipos_controller import tipo_bp
 from services.services import init_default_tipos
 
-
-# Crear tablas si no existen
-
-def create_tables():
-    Base.metadata.create_all(bind=engine)
-
-
-# Crear la app Flask
-
 app = Flask(__name__)
+
+app.config["JWT_SECRET_KEY"] = os.getenv(
+    "JWT_SECRET_KEY",
+    getattr(jwt_conf, "JWT_SECRET_KEY", None) if jwt_conf is not None else None,
+)
+
+if not app.config["JWT_SECRET_KEY"]:
+    raise ValueError("JWT_SECRET_KEY no está definida")
+
+app.config["JWT_TOKEN_LOCATION"] = getattr(jwt_conf, "JWT_TOKEN_LOCATION", ["headers"]) if jwt_conf else ["headers"]
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = getattr(jwt_conf, "JWT_ACCESS_TOKEN_EXPIRES", timedelta(hours=1)) if jwt_conf else timedelta(hours=1)
+app.config["JWT_HEADER_NAME"] = getattr(jwt_conf, "JWT_HEADER_NAME", "Authorization") if jwt_conf else "Authorization"
+app.config["JWT_HEADER_TYPE"] = getattr(jwt_conf, "JWT_HEADER_TYPE", "Bearer") if jwt_conf else "Bearer"
+
+jwt = JWTManager(app)
+
+# REGISTRAR TODOS LOS BLUEPRINTS
 app.register_blueprint(usuario_bp)
-app.register_blueprint(tipo_bp)
 app.register_blueprint(movimiento_bp)
+app.register_blueprint(tipo_bp)
 
+# Inicializar tipos por defecto
+init_default_tipos()
 
-# Ejecutar la app
+register_jwt_error_handlers(app)
+
+@app.route('/')
+def health_check():
+    return jsonify({"status": "OK", "message": "AgendaAPI funcionando"})
 
 if __name__ == '__main__':
-    create_tables()          #  Igual que en el ejemplo
-    init_default_tipos()     # Inserta los tipos por defecto
+    inicializar_bd()
+    print("Iniciando servidor...")
     app.run(debug=True, host='0.0.0.0', port=5000)
+

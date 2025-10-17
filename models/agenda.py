@@ -1,18 +1,26 @@
-# Importamos lo necesario de SQLAlchemy
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
-from sqlalchemy.orm import relationship, declarative_base
+import sys
+import os
 
-# Base principal para declarar los modelos
-Base = declarative_base()
+# Asegurar que la raíz del workspace esté en sys.path para poder importar config.*
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
+
+from sqlalchemy import Column, Integer, String, DateTime, Float, Date, ForeignKey
+from sqlalchemy.orm import relationship
+from config.database import Base  # ← Usar la misma Base de database.py
+
+# ELIMINA esta línea - ya existe en database.py
+# Base = declarative_base()
 
 # Modelo para la tabla de usuarios
 class Usuario(Base):
     __tablename__ = "usuarios"
-
-    id = Column(Integer, primary_key=True, index=True)      # ID único del usuario
-    name = Column(String(255), nullable=False)              # Nombre del usuario
-    telefono = Column(String(50), nullable=True)            # Teléfono (opcional)
-    correo = Column(String(255), nullable=False, unique=True) # Correo (obligatorio y único)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    correo = Column(String, unique=True, nullable=False)
+    telefono = Column(String, nullable=True)
+    password = Column(String, nullable=True)  # <- asegurar que exista
 
     # Relación con movimientos (un usuario puede tener muchos movimientos)
     movimientos = relationship("Movimiento", back_populates="usuario")
@@ -45,4 +53,3 @@ class Movimiento(Base):
     # Relaciones hacia Usuario y TipoMovi
     usuario = relationship("Usuario", back_populates="movimientos")
     tipo = relationship("TipoMovi", back_populates="movimientos")
-

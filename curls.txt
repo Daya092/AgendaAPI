@@ -1,0 +1,122 @@
+# Adaptado a AgendaAPI (solo usuarios) — blueprint url_prefix="/api", app en puerto 5000
+# Ahora con solo 5 usuarios y login que incluye name + correo (máxima compatibilidad)
+
+# 1) Crear 5 usuarios (POST /api/usuarios)
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user2","correo":"user2@example.com","password":"pass2"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user3","correo":"user3@example.com","password":"pass3"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user4","correo":"user4@example.com","password":"pass4"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user5","correo":"user5@example.com","password":"pass5"}'
+
+# 2) Login y obtener token (POST /api/login)
+# Envío tanto "name" como "correo" para compatibilidad con authenticate_user
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user2","correo":"user2@example.com","password":"pass2"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user3","correo":"user3@example.com","password":"pass3"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user4","correo":"user4@example.com","password":"pass4"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user5","correo":"user5@example.com","password":"pass5"}'
+
+# Ejemplo: extraer token para user1 (requiere jq)
+# TOKEN=$(curl -s -X POST http://localhost:5000/api/login -H "Content-Type: application/json" -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}' | jq -r .access_token)
+
+# 3) Consultar todos los usuarios (GET /api/usuarios) — protegido
+curl -X GET http://localhost:5000/api/usuarios \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 4) Consultar usuario por ID (GET /api/usuarios/<id>) — protegido
+curl -X GET http://localhost:5000/api/usuarios/1 \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 5) Actualizar usuario (PUT /api/usuarios/<id>) — protegido
+curl -X PUT http://localhost:5000/api/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name":"nuevoNombre1","telefono":"123456789"}'
+
+# 6) Eliminar usuario (DELETE /api/usuarios/<id>) — protegido
+curl -X DELETE http://localhost:5000/api/usuarios/1 \
+  -H "Authorization: Bearer <TOKEN>"
+
+# Recordatorio antes de ejecutar:
+# 1) Exporta la clave JWT si quieres usar otra distinta a la de config/jwt.py:
+#    export JWT_SECRET_KEY="clave_secreta_segura_aqui"
+# 2) Arranca la app desde la raíz del workspace:
+#    python3 src/app.py
+# 3) Instala jq si quieres extraer tokens automáticamente:
+#    sudo apt update && sudo apt install -y jq
+
+Creacion de movimientos 
+######CREAR MOVIMIENTOS DE PRUEBA
+Movimiento de INGRESO:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 1500.50,
+    "descripcion": "Salario mensual",
+    "tipo_id": 1,
+    "fecha": "2024-10-16"
+  }'
+Movimiento de GASTO:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 250.75,
+    "descripcion": "Compra supermercado",
+    "tipo_id": 2,
+    "fecha": "2024-10-15"
+  }'
+Otro ingreso:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/movimientos \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "monto": 300.00,
+    "descripcion": "Freelance",
+    "tipo_id": 1,
+    "fecha": "2024-10-14"
+  }'
+3. VERIFICAR QUE SE CREARON
+bash
+# Ver todos los movimientos
+curl -X GET http://127.0.0.1:5000/api/movimientos \
+  -H "Authorization: Bearer $TOKEN"
+
+# Ver resumen financiero
+curl -X GET http://127.0.0.1:5000/api/resumen \
+  -H "Authorization: Bearer $TOKEN"
+
+
+####consultas 
+# Ver movimientos
+curl -X GET http://127.0.0.1:5000/api/movimientos -H "Authorization: Bearer $TOKEN"
+
+# Ver tipos
+curl -X GET http://127.0.0.1:5000/api/tipos -H "Authorization: Bearer $TOKEN"
