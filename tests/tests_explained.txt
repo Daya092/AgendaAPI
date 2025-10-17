@@ -1,0 +1,56 @@
+Tests automatizados — explicación rápida
+
+Propósito
+- Verificar el flujo básico de autenticación y acceso:
+  1) Registro de usuario (POST /api/usuarios).
+  2) Login válido devuelve access_token (POST /api/login).
+  3) Acceso a ruta protegida con token (GET /api/usuarios).
+  4) Login inválido (credenciales incorrectas).
+  5) Acceso a ruta protegida sin token (error esperado).
+
+Ubicación
+- Archivo principal de tests: tests/test_auth.py
+
+Cómo funcionan los tests
+- Fixture setup_db: recrea las tablas (Base.metadata.drop_all/create_all) antes de cada test para un estado limpio.
+- Fixture client: usa app.test_client() para hacer peticiones HTTP internas sin levantar el servidor.
+- Los tests envían JSON a los endpoints y validan status codes y contenido (por ejemplo, que exista "access_token").
+- El test extrae el token del JSON de respuesta y lo usa en el header Authorization: Bearer <token> para rutas protegidas.
+
+Requisitos previos
+- Ejecutar desde la raíz del repo (/workspaces/AgendaAPI).
+- Dependencias: pytest, flask, flask-jwt-extended, sqlalchemy, werkzeug.
+  - Instalar rápido:
+    pip install -r requirements.txt
+  - Si no existe requirements.txt:
+    pip install pytest flask flask-jwt-extended sqlalchemy werkzeug
+- JWT_SECRET_KEY:
+  - El archivo de tests establece JWT_SECRET_KEY internamente,
+    pero al ejecutar manualmente o si importas la app fuera de tests, exporta:
+    export JWT_SECRET_KEY="test_secret_local"
+- Si la base de datos es antigua y falta la columna password:
+    python3 scripts/add_password_column.py
+    (opcional) python3 scripts/fill_missing_passwords.py
+
+Cómo ejecutar
+- Desde la raíz del proyecto:
+  pytest -q
+- Alternativa si tienes problemas de import:
+  PYTHONPATH=. pytest -q
+
+Qué esperar
+- Tests verdes: pytest imprimirá puntos o el resumen "3 passed".
+- Fallos: pytest mostrará tracebacks y assertion messages; copia el output para depurar.
+
+Errores comunes y soluciones rápidas
+- ModuleNotFoundError: No module named 'src'
+  - Ejecutar pytest desde la raíz o usar PYTHONPATH=. pytest -q
+- sqlite3.OperationalError: no such column: usuarios.password
+  - Ejecutar scripts/add_password_column.py y reiniciar (ver arriba).
+- Errores JWT (401/422)
+  - Verificar que el token se genera y se manda en el header Authorization: Bearer <token>.
+
+Próximos pasos recomendados
+- Añadir tests para: update/delete de usuarios, casos límite (campos faltantes), y revocación/refresh si implementas esos endpoints.
+- Integrar pytest en CI (GitHub Actions) para ejecutar tests en cada push/PR.
+

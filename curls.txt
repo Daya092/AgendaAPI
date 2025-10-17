@@ -1,0 +1,70 @@
+# Adaptado a AgendaAPI (solo usuarios) — blueprint url_prefix="/api", app en puerto 5000
+# Ahora con solo 5 usuarios y login que incluye name + correo (máxima compatibilidad)
+
+# 1) Crear 5 usuarios (POST /api/usuarios)
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user2","correo":"user2@example.com","password":"pass2"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user3","correo":"user3@example.com","password":"pass3"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user4","correo":"user4@example.com","password":"pass4"}'
+curl -X POST http://localhost:5000/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user5","correo":"user5@example.com","password":"pass5"}'
+
+# 2) Login y obtener token (POST /api/login)
+# Envío tanto "name" como "correo" para compatibilidad con authenticate_user
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user2","correo":"user2@example.com","password":"pass2"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user3","correo":"user3@example.com","password":"pass3"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user4","correo":"user4@example.com","password":"pass4"}'
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user5","correo":"user5@example.com","password":"pass5"}'
+
+# Ejemplo: extraer token para user1 (requiere jq)
+# TOKEN=$(curl -s -X POST http://localhost:5000/api/login -H "Content-Type: application/json" -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}' | jq -r .access_token)
+
+# 3) Consultar todos los usuarios (GET /api/usuarios) — protegido
+curl -X GET http://localhost:5000/api/usuarios \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 4) Consultar usuario por ID (GET /api/usuarios/<id>) — protegido
+curl -X GET http://localhost:5000/api/usuarios/1 \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 5) Actualizar usuario (PUT /api/usuarios/<id>) — protegido
+curl -X PUT http://localhost:5000/api/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"name":"nuevoNombre1","telefono":"123456789"}'
+
+# 6) Eliminar usuario (DELETE /api/usuarios/<id>) — protegido
+curl -X DELETE http://localhost:5000/api/usuarios/1 \
+  -H "Authorization: Bearer <TOKEN>"
+
+# Recordatorio antes de ejecutar:
+# 1) Exporta la clave JWT si quieres usar otra distinta a la de config/jwt.py:
+#    export JWT_SECRET_KEY="clave_secreta_segura_aqui"
+# 2) Arranca la app desde la raíz del workspace:
+#    python3 src/app.py
+# 3) Instala jq si quieres extraer tokens automáticamente:
+#    sudo apt update && sudo apt install -y jq
+
+
+usurer 1
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2MDY1ODM2MiwianRpIjoiYWIwNWM0YmItZjE2NS00YTNiLTk2NTktNDk3YWEwNzM4NzU0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NjA2NTgzNjIsImNzcmYiOiJhMzhmMjE0ZS01MTQxLTQzMDQtOGY3OS01MGFhMmYyZjM3ZDQiLCJleHAiOjE3NjA2NjE5NjJ9.IencWUW9okSGFp3ARFAwtcdUbmzC5jYeTmgl6uVSZCk
