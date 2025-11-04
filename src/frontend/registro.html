@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro - Agenda App</title>
+  <style>
+    :root{
+      --bg:#fff6f8;
+      --pink-50:#fff1f3;
+      --pink-100:#ffe6ec;
+      --pink-200:#ffc9d6;
+      --text:#3b2030;
+      --muted:#7a5766;
+      --accent:#ff8fb3;
+      --btn-hover:#ff6f9a;
+      --card-shadow: 0 6px 24px rgba(197, 140, 153, 0.12);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, var(--bg), #fff);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+    .container{
+      width:100%;
+      max-width:400px;
+    }
+    .card{
+      background:linear-gradient(180deg,#fff,#fff8fb);
+      border-radius:var(--radius);
+      padding:32px;
+      box-shadow: var(--card-shadow);
+    }
+    h1{
+      margin:0 0 8px 0;
+      font-size:28px;
+      color:#4a2230;
+      text-align:center;
+    }
+    .subtitle{
+      margin:0 0 24px 0;
+      color:var(--muted);
+      text-align:center;
+    }
+    form{ display:flex; flex-direction:column; gap:16px; }
+    label{ font-size:13px; color:var(--muted); display:block; }
+    input[type="text"], input[type="email"], input[type="password"]{
+      width:100%;
+      padding:12px 16px;
+      border-radius:10px;
+      border:1px solid #f0cbd6;
+      background:transparent;
+      outline:none;
+      font-size:14px;
+      color:var(--text);
+      transition:box-shadow .12s, border-color .12s;
+    }
+    input:focus{ box-shadow:0 4px 18px rgba(255,143,179,0.14); border-color:var(--accent); }
+    .actions{ display:flex; gap:8px; align-items:center; margin-top:6px }
+    button.primary{
+      background: linear-gradient(180deg,var(--accent),var(--btn-hover));
+      color:white;
+      border:none;
+      padding:12px 16px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow: 0 6px 18px rgba(255,111,154,0.12);
+      flex:1;
+    }
+    button.secondary{
+      background:transparent;
+      border:1px solid #f3d6df;
+      color:var(--muted);
+      padding:11px 16px;
+      border-radius:10px;
+      cursor:pointer;
+    }
+    .login-link{
+      margin-top:20px;
+      padding-top:20px;
+      border-top:1px solid #f0d6df;
+      text-align:center;
+    }
+    .muted{ font-size:13px; color:var(--muted); margin:0; }
+    a{ color:var(--accent); text-decoration:none; font-weight:600; }
+    .server-result{
+      margin-top:12px;
+      padding:12px;
+      border-radius:10px;
+      font-size:14px;
+    }
+    .server-result.success{ background:linear-gradient(90deg, rgba(223,255,238,0.6), rgba(232,255,245,0.6)); color:#0b6b4f; border:1px solid rgba(11,107,79,0.08) }
+    .server-result.error{ background:linear-gradient(90deg, rgba(255,240,244,0.8), rgba(255,246,248,0.8)); color:#8b283e; border:1px solid rgba(139,40,62,0.06) }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Crear Cuenta</h1>
+      <p class="subtitle">Regístrate para comenzar a usar Agenda App</p>
+
+      {% if result %}
+        <div class="server-result {{ 'success' if result.get('success') else 'error' }}">
+          {% if result.get('success') %}
+            <strong>¡Registro exitoso!</strong>
+            <div style="margin-top:6px">{{ result.get('message') }}</div>
+          {% else %}
+            <strong>Error</strong>
+            <div style="margin-top:6px">{{ result.get('message') or result.get('error') }}</div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <form id="registerForm" autocomplete="off" novalidate>
+        <div>
+          <label>Nombre de usuario</label>
+          <input name="username" type="text" required maxlength="150" placeholder="ej. maria123" />
+        </div>
+        <div>
+          <label>Correo electrónico</label>
+          <input name="email" type="email" required placeholder="tucorreo@ejemplo.com" />
+        </div>
+        <div>
+          <label>Contraseña</label>
+          <input name="password" type="password" required minlength="6" placeholder="••••••••" />
+        </div>
+        <div>
+          <label>Confirmar contraseña</label>
+          <input name="confirm_password" type="password" required minlength="6" placeholder="Repite la contraseña" />
+        </div>
+
+        <div class="actions">
+          <button class="primary" type="submit">Registrarse</button>
+          <button type="button" class="secondary" onclick="document.getElementById('registerForm').reset();">Limpiar</button>
+        </div>
+
+        <div id="message" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="login-link">
+        <p class="muted">¿Ya tienes cuenta? <a href="/">Inicia sesión aquí</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const msgEl = document.getElementById('message');
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msgEl.textContent = '';
+      msgEl.className = '';
+
+      const form = e.target;
+      const data = {
+        username: form.username.value.trim(),
+        email: form.email.value.trim(),
+        password: form.password.value,
+        confirm_password: form.confirm_password.value
+      };
+
+      if (!data.username || !data.email || !data.password) {
+        showError('Completa todos los campos.');
+        return;
+      }
+      if (data.password !== data.confirm_password) {
+        showError('Las contraseñas no coinciden.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json().catch(() => ({}));
+        if (res.ok) {
+          showSuccess(result.message || 'Registro correcto. Ahora puedes iniciar sesión.');
+          form.reset();
+        } else {
+          showError(result.error || result.message || `Error: ${res.status}`);
+        }
+      } catch (err) {
+        console.error(err);
+        showError('Error de red. Intenta de nuevo.');
+      }
+    });
+
+    function showError(text){
+      msgEl.className = 'server-result error';
+      msgEl.textContent = text;
+    }
+    function showSuccess(text){
+      msgEl.className = 'server-result success';
+      msgEl.textContent = text;
+    }
+  </script>
+</body>
+</html>

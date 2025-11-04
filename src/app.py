@@ -5,7 +5,8 @@ _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
-from flask import Flask, jsonify
+# Añadir render_template al import
+from flask import Flask, jsonify, render_template
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from config.database import engine, Base, SessionLocal
@@ -30,7 +31,8 @@ from controllers.movimientos_controller import movimiento_bp
 from controllers.tipos_controller import tipo_bp
 from services.services import init_default_tipos
 
-app = Flask(__name__)
+# Especificar template_folder al crear la app
+app = Flask(__name__, template_folder="frontend")
 
 app.config["JWT_SECRET_KEY"] = os.getenv(
     "JWT_SECRET_KEY",
@@ -57,12 +59,16 @@ init_default_tipos()
 
 register_jwt_error_handlers(app)
 
+# RUTAS PARA EL FRONTEND
 @app.route('/')
-def health_check():
-    return jsonify({"status": "OK", "message": "AgendaAPI funcionando"})
+def index():
+    return render_template("inicio.html", result=None)
+
+@app.route('/register', methods=['GET'])
+def register_page():
+    return render_template("registro.html", result=None)
 
 if __name__ == '__main__':
     inicializar_bd()
     print("Iniciando servidor...")
     app.run(debug=True, host='0.0.0.0', port=5000)
-

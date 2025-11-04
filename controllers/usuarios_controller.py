@@ -70,16 +70,23 @@ def get_usuario(usuario_id):
     logger.info(f"Consulta de usuario por ID: {usuario_id}")
     return jsonify(usuario), 200
 
-#crear usuario 
-@usuario_bp.route("/usuarios", methods=["POST"])
-def create_usuario_route():
+#---------crear usuario ------------------
+@usuario_bp.route("/users/register", methods=["POST"])
+def register_usuario_route():
     data = request.get_json(silent=True)
-    if not data or "name" not in data or "correo" not in data or "password" not in data:
+    if not data or "username" not in data or "email" not in data or "password" not in data:
         logger.warning("Registro fallido: datos incompletos")
-        return jsonify({"error": "name, correo y password son obligatorios"}), 400
+        return jsonify({"error": "username, email y password son obligatorios"}), 400
 
-    usuario = create_usuario(data)
-    logger.info(f"Usuario creado: {data.get('name')}")
+    # MAPEAR LOS CAMPOS 
+    usuario_data = {
+        "name": data["username"],      # username -> name
+        "correo": data["email"],       # email -> correo  
+        "password": data["password"]
+    }
+
+    usuario = create_usuario(usuario_data)  # Pasar los datos mapeados
+    logger.info(f"Usuario creado: {data.get('username')}")
     return jsonify(usuario), 201
 
 
