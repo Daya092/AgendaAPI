@@ -148,16 +148,13 @@
         const result = await res.json();
         
         if (res.ok) {
-          showSuccess('¡Login exitoso! Token recibido.');
-          console.log('Token:', result.access_token);
-          console.log('Usuario:', result.user);
-          // Guardar el token en localStorage
           localStorage.setItem('token', result.access_token);
-          form.reset();
+          window.location.href = '/clases';
         } else {
           showError(result.error || 'Error en el login');
         }
-      } catch (err) {
+      }
+       catch (err) {
         console.error(err);
         showError('Error de red. Intenta de nuevo.');
       }

@@ -29,7 +29,8 @@ except Exception:
 from controllers.usuarios_controller import usuario_bp, register_jwt_error_handlers
 from controllers.movimientos_controller import movimiento_bp
 from controllers.tipos_controller import tipo_bp
-from services.services import init_default_tipos
+from services.services import init_default_tipos, inicializar_clases_gym
+from controllers.clases_controller import clases_bp
 
 # Especificar template_folder al crear la app
 app = Flask(__name__, template_folder="frontend")
@@ -53,6 +54,7 @@ jwt = JWTManager(app)
 app.register_blueprint(usuario_bp)
 app.register_blueprint(movimiento_bp)
 app.register_blueprint(tipo_bp)
+app.register_blueprint(clases_bp)
 
 # Inicializar tipos por defecto
 init_default_tipos()
@@ -68,7 +70,14 @@ def index():
 def register_page():
     return render_template("registro.html", result=None)
 
+
+#Ruta para la pagina de clases 
+@app.route('/clases', methods=['GET'])
+def clases_page():
+    return render_template("clases.html")
+
 if __name__ == '__main__':
     inicializar_bd()
+    inicializar_clases_gym()  
     print("Iniciando servidor...")
     app.run(debug=True, host='0.0.0.0', port=5000)

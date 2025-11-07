@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clases de Gym</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .clase-card {
+            background: white;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .clase-card:hover {
+            transform: translateY(-2px);
+        }
+        .clase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .clase-nombre {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .clase-instructor {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .clase-descripcion {
+            color: #555;
+            margin: 10px 0;
+        }
+        .horarios {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .horario-tag {
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        .horario-tag.lleno {
+            background: #e74c3c;
+        }
+        .horario-tag.disponible {
+            background: #27ae60;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button.cerrar-sesion {
+            background: #e74c3c;
+        }
+        button.cerrar-sesion:hover {
+            background: #c0392b;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #c0392b;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #e6ffe6;
+            color: #27ae60;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏋️ Clases de Gym Disponibles</h1>
+        <div>
+            <button onclick="verMisClases()">Mis Clases</button>
+            <button onclick="cerrarSesion()" class="cerrar-sesion">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div id="clases-container">
+        <p>Cargando clases...</p>
+    </div>
+
+    <!-- Modal para inscripción -->
+    <div id="modal-inscripcion" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-titulo">Inscribirse en Clase</h2>
+            <div id="modal-contenido">
+                <!-- Se llena dinámicamente -->
+            </div>
+            <button onclick="cerrarModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        let clasesData = [];
+        let claseSeleccionada = null;
+
+        // Verificar autenticación
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        // Cargar clases disponibles
+        async function cargarClases() {
+            try {
+                const res = await fetch('/api/clases', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        cerrarSesion();
+                        return;
+                    }
+                    throw new Error(`Error ${res.status}`);
+                }
+                
+                clasesData = await res.json();
+                mostrarClases(clasesData);
+                
+            } catch (error) {
+                console.error('Error cargando clases:', error);
+                document.getElementById('clases-container').innerHTML = 
+                    '<div class="error">Error cargando clases: ' + error.message + '</div>';
+            }
+        }
+
+        // Mostrar clases en la interfaz
+        function mostrarClases(clases) {
+            const container = document.getElementById('clases-container');
+            
+            if (clases.length === 0) {
+                container.innerHTML = '<p>No hay clases disponibles en este momento.</p>';
+                return;
+            }
+            
+            container.innerHTML = clases.map(clase => `
+                <div class="clase-card" onclick="seleccionarClase(${clase.id})">
+                    <div class="clase-header">
+                        <h3 class="clase-nombre">${clase.nombre}</h3>
+                        <span class="clase-instructor">👤 ${clase.instructor}</span>
+                    </div>
+                    <p class="clase-descripcion">${clase.descripcion}</p>
+                    <p><strong>Duración:</strong> ${clase.duracion}min | <strong>Capacidad:</strong> ${clase.capacidad_maxima} personas</p>
+                    
+                    <div class="horarios">
+                        ${clase.horarios.map(horario => `
+                            <span class="horario-tag ${horario.lleno ? 'lleno' : 'disponible'}">
+                                ${horario.dia_semana} ${horario.hora_inicio} 
+                                ${horario.lleno ? ' (LLENO)' : ` (${horario.disponibilidad} cupos)`}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Seleccionar una clase para inscripción
+        function seleccionarClase(claseId) {
+            claseSeleccionada = clasesData.find(c => c.id === claseId);
+            if (!claseSeleccionada) return;
+
+            const modal = document.getElementById('modal-inscripcion');
+            const titulo = document.getElementById('modal-titulo');
+            const contenido = document.getElementById('modal-contenido');
+
+            titulo.textContent = `Inscribirse en ${claseSeleccionada.nombre}`;
+            
+            // Obtener próximas fechas disponibles
+            const proximasFechas = obtenerProximasFechas();
+            
+            contenido.innerHTML = `
+                <p><strong>Instructor:</strong> ${claseSeleccionada.instructor}</p>
+                <p><strong>Descripción:</strong> ${claseSeleccionada.descripcion}</p>
+                
+                <h3>Selecciona un horario:</h3>
+                ${claseSeleccionada.horarios.map(horario => `
+                    <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <strong>${horario.dia_semana} ${horario.hora_inicio} - ${horario.hora_fin}</strong>
+                        <br>
+                        <span style="color: ${horario.lleno ? '#e74c3c' : '#27ae60'}">
+                            ${horario.lleno ? '❌ CLASE LLENA' : `✅ ${horario.disponibilidad} cupos disponibles`}
+                        </span>
+                        ${!horario.lleno ? `
+                            <br>
+                            <label>Fecha: 
+                                <select id="fecha-${horario.id}">
+                                    ${proximasFechas.map(fecha => `
+                                        <option value="${fecha}">${formatearFecha(fecha)}</option>
+                                    `).join('')}
+                                </select>
+                            </label>
+                            <button onclick="inscribirse(${horario.id}, 'fecha-${horario.id}')" 
+                                    style="background: #27ae60; margin-left: 10px;">
+                                Inscribirse
+                            </button>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // Inscribirse en una clase
+        async function inscribirse(horarioId, fechaSelectId) {
+            const fechaSelect = document.getElementById(fechaSelectId);
+            const fechaClase = fechaSelect.value;
+
+            try {
+                const res = await fetch('/api/clases/inscribir', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        horario_id: horarioId,
+                        fecha_clase: fechaClase
+                    })
+                });
+
+                const resultado = await res.json();
+
+                if (resultado.success) {
+                    mostrarMensaje('success', resultado.mensaje);
+                    cerrarModal();
+                    cargarClases(); // Recargar para actualizar disponibilidad
+                } else {
+                    mostrarMensaje('error', resultado.error);
+                }
+
+            } catch (error) {
+                console.error('Error inscribiéndose:', error);
+                mostrarMensaje('error', 'Error al inscribirse: ' + error.message);
+            }
+        }
+
+        // Ver mis clases inscritas
+        async function verMisClases() {
+            try {
+                const res = await fetch('/api/mis-clases', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const misClases = await res.json();
+                
+                const modal = document.getElementById('modal-inscripcion');
+                const titulo = document.getElementById('modal-titulo');
+                const contenido = document.getElementById('modal-contenido');
+
+                titulo.textContent = 'Mis Clases Inscritas';
+                
+                if (misClases.length === 0) {
+                    contenido.innerHTML = '<p>No estás inscrito en ninguna clase.</p>';
+                } else {
+                    contenido.innerHTML = misClases.map(clase => `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #3498db; border-radius: 5px;">
+                            <strong>${clase.clase_nombre}</strong><br>
+                            <strong>Instructor:</strong> ${clase.instructor}<br>
+                            <strong>Día:</strong> ${clase.dia_semana} ${clase.hora}<br>
+                            <strong>Fecha:</strong> ${formatearFecha(clase.fecha_clase)}<br>
+                            <strong>Inscrito el:</strong> ${new Date(clase.fecha_inscripcion).toLocaleDateString()}
+                        </div>
+                    `).join('');
+                }
+
+                modal.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error cargando mis clases:', error);
+                mostrarMensaje('error', 'Error cargando mis clases: ' + error.message);
+            }
+        }
+
+        // Utilidades
+        function obtenerProximasFechas() {
+            const fechas = [];
+            const hoy = new Date();
+            
+            for (let i = 0; i < 14; i++) { // Próximos 14 días
+                const fecha = new Date(hoy);
+                fecha.setDate(hoy.getDate() + i);
+                fechas.push(fecha.toISOString().split('T')[0]);
+            }
+            
+            return fechas;
+        }
+
+        function formatearFecha(fechaStr) {
+            const fecha = new Date(fechaStr);
+            return fecha.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        function mostrarMensaje(tipo, mensaje) {
+            const container = document.getElementById('clases-container');
+            const mensajeDiv = document.createElement('div');
+            mensajeDiv.className = tipo;
+            mensajeDiv.textContent = mensaje;
+            container.insertBefore(mensajeDiv, container.firstChild);
+            
+            setTimeout(() => {
+                mensajeDiv.remove();
+            }, 5000);
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-inscripcion').style.display = 'none';
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        // Inicializar
+        cargarClases();
+
+        // Cerrar modal al hacer click fuera
+        document.getElementById('modal-inscripcion').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+    </script>
+</body>
+</html>

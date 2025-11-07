@@ -6,8 +6,9 @@ _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
-from sqlalchemy import Column, Integer, String, DateTime, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Float, Date, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from config.database import Base  # ← Usar la misma Base de database.py
 
 # ELIMINA esta línea - ya existe en database.py
@@ -53,3 +54,44 @@ class Movimiento(Base):
     # Relaciones hacia Usuario y TipoMovi
     usuario = relationship("Usuario", back_populates="movimientos")
     tipo = relationship("TipoMovi", back_populates="movimientos")
+
+
+# ------Moderlos para clases de gym--------
+class ClaseGym(Base):
+    __tablename__ = "clases_gym"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)  # "Yoga", "Spinning", "CrossFit", etc.
+    descripcion = Column(Text)
+    instructor = Column(String)
+    capacidad_maxima = Column(Integer, default=20)
+    duracion = Column(Integer)  # Duración en minutos
+    
+    # Relación con horarios
+    horarios = relationship("HorarioClase", back_populates="clase")
+
+class HorarioClase(Base):
+    __tablename__ = "horarios_clase"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    clase_id = Column(Integer, ForeignKey('clases_gym.id'))
+    dia_semana = Column(String)  # "Lunes", "Martes", etc.
+    hora_inicio = Column(String)  # "08:00", "18:30"
+    hora_fin = Column(String)
+    
+    # Relación
+    clase = relationship("ClaseGym", back_populates="horarios")
+    inscripciones = relationship("InscripcionClase", back_populates="horario")
+
+class InscripcionClase(Base):
+    __tablename__ = "inscripciones_clase"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'))
+    horario_id = Column(Integer, ForeignKey('horarios_clase.id'))
+    fecha_inscripcion = Column(DateTime, default=datetime.utcnow)
+    fecha_clase = Column(Date)  # Fecha específica de la clase
+    
+    # Relaciones
+    usuario = relationship("Usuario")
+    horario = relationship("HorarioClase", back_populates="inscripciones")
