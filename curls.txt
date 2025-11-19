@@ -39,8 +39,22 @@ curl -X POST http://localhost:5000/api/login \
 # Ejemplo: extraer token para user1 (requiere jq)
 # TOKEN=$(curl -s -X POST http://localhost:5000/api/login -H "Content-Type: application/json" -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}' | jq -r .access_token)
 
+
+
+#Guardar Token en la variable
+
+#TOKEN=$(curl -s -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"name":"user1","correo":"user1@example.com","password":"pass1"}' \
+  | jq -r .access_token)
+
+
+
+
+
 # 3) Consultar todos los usuarios (GET /api/usuarios) — protegido
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2MjI2OTgwMCwianRpIjoiZWJmM2E0NjAtMGIzOC00NTM2LWIwMjctYzk1OWM2Y2U3NjU0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NjIyNjk4MDAsImNzcmYiOiJmY2NiYzQ1OS1kNjk3LTRhZWItYjAyYS1hM2FkZDY3Y2E0OWEiLCJleHAiOjE3NjIyNzM0MDB9.ef2TGcK94rcxREXUsijRDmLJXm2TAaSsj9Q-A7qGnis
+curl -X GET http://localhost:5000/api/usuarios \
+  -H "Authorization: Bearer <TOKEN>"
 
 # 4) Consultar usuario por ID (GET /api/usuarios/<id>) — protegido
 curl -X GET http://localhost:5000/api/usuarios/1 \

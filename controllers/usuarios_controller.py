@@ -31,7 +31,7 @@ def register_jwt_error_handlers(app):
 @usuario_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
-    username = data.get("name") or data.get("username")
+    username = data.get("username")  # ← SOLO username
     password = data.get("password")
 
     if not username or not password:

@@ -1,5 +1,6 @@
 import sys
 import os
+import traceback  # ← Añadir este import
 
 _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _root_dir not in sys.path:
@@ -107,9 +108,10 @@ def delete_usuario(usuario_id: int) -> bool:
 def authenticate_user(identifier: str, password: str) -> Optional[Usuario]:
     db: Session = SessionLocal()
     try:
-        user = db.query(Usuario).filter(Usuario.correo == identifier).first()
+        # Buscar por username O correo
+        user = db.query(Usuario).filter(Usuario.name == identifier).first()
         if not user:
-            user = db.query(Usuario).filter(Usuario.name == identifier).first()
+            user = db.query(Usuario).filter(Usuario.correo == identifier).first()
         if not user:
             return None
         if not check_password_hash(user.password, password):
@@ -326,9 +328,7 @@ CLASES_PREDEFINIDAS = [
         "capacidad_maxima": 15,
         "duracion": 60,
         "horarios": [
-            {"dia_semana": "Lunes", "hora_inicio": "07:00", "hora_fin": "08:00"},
-            {"dia_semana": "Miércoles", "hora_inicio": "07:00", "hora_fin": "08:00"},
-            {"dia_semana": "Viernes", "hora_inicio": "07:00", "hora_fin": "08:00"}
+            {"dia_semana": "Lunes", "hora_inicio": "07:00", "hora_fin": "08:00"}
         ]
     },
     {
@@ -338,9 +338,7 @@ CLASES_PREDEFINIDAS = [
         "capacidad_maxima": 20,
         "duracion": 45,
         "horarios": [
-            {"dia_semana": "Lunes", "hora_inicio": "18:00", "hora_fin": "18:45"},
-            {"dia_semana": "Martes", "hora_inicio": "19:00", "hora_fin": "19:45"},
-            {"dia_semana": "Jueves", "hora_inicio": "18:00", "hora_fin": "18:45"}
+            {"dia_semana": "Martes", "hora_inicio": "18:00", "hora_fin": "18:45"}
         ]
     },
     {
@@ -350,9 +348,7 @@ CLASES_PREDEFINIDAS = [
         "capacidad_maxima": 12,
         "duracion": 50,
         "horarios": [
-            {"dia_semana": "Lunes", "hora_inicio": "17:00", "hora_fin": "17:50"},
-            {"dia_semana": "Miércoles", "hora_inicio": "17:00", "hora_fin": "17:50"},
-            {"dia_semana": "Viernes", "hora_inicio": "17:00", "hora_fin": "17:50"}
+            {"dia_semana": "Miércoles", "hora_inicio": "17:00", "hora_fin": "17:50"}
         ]
     },
     {
@@ -362,9 +358,7 @@ CLASES_PREDEFINIDAS = [
         "capacidad_maxima": 10,
         "duracion": 55,
         "horarios": [
-            {"dia_semana": "Martes", "hora_inicio": "09:00", "hora_fin": "09:55"},
-            {"dia_semana": "Jueves", "hora_inicio": "09:00", "hora_fin": "09:55"},
-            {"dia_semana": "Sábado", "hora_inicio": "10:00", "hora_fin": "10:55"}
+            {"dia_semana": "Jueves", "hora_inicio": "09:00", "hora_fin": "09:55"}
         ]
     },
     {
@@ -374,46 +368,49 @@ CLASES_PREDEFINIDAS = [
         "capacidad_maxima": 25,
         "duracion": 60,
         "horarios": [
-            {"dia_semana": "Lunes", "hora_inicio": "19:00", "hora_fin": "20:00"},
-            {"dia_semana": "Miércoles", "hora_inicio": "19:00", "hora_fin": "20:00"},
             {"dia_semana": "Viernes", "hora_inicio": "19:00", "hora_fin": "20:00"}
         ]
     }
 ]
 
 def inicializar_clases_gym():
-    """Crea las clases predefinidas si no existen"""
+    """Crea o actualiza las clases predefinidas"""
     db: Session = SessionLocal()
     try:
+        # Primero eliminar todas las clases existentes para empezar limpio
+        db.query(HorarioClase).delete()
+        db.query(ClaseGym).delete()
+        db.commit()
+        
         for clase_data in CLASES_PREDEFINIDAS:
-            existe = db.query(ClaseGym).filter(ClaseGym.nombre == clase_data["nombre"]).first()
-            if not existe:
-                clase = ClaseGym(
-                    nombre=clase_data["nombre"],
-                    descripcion=clase_data["descripcion"],
-                    instructor=clase_data["instructor"],
-                    capacidad_maxima=clase_data["capacidad_maxima"],
-                    duracion=clase_data["duracion"]
-                )
-                db.add(clase)
-                db.commit()
-                db.refresh(clase)
+            # Crear nueva clase
+            clase = ClaseGym(
+                nombre=clase_data["nombre"],
+                descripcion=clase_data["descripcion"],
+                instructor=clase_data["instructor"],
+                capacidad_maxima=clase_data["capacidad_maxima"],
+                duracion=clase_data["duracion"]
+            )
+            db.add(clase)
+            db.commit()
+            db.refresh(clase)
+            
+            # Crear horario (solo uno por clase)
+            horario_data = clase_data["horarios"][0]
+            horario = HorarioClase(
+                clase_id=clase.id,
+                dia_semana=horario_data["dia_semana"],
+                hora_inicio=horario_data["hora_inicio"],
+                hora_fin=horario_data["hora_fin"]
+            )
+            db.add(horario)
+            db.commit()
+            
+            logger.info(f"Clase creada: {clase_data['nombre']} (ID: {clase.id}, Horario ID: {horario.id})")
                 
-                # Crear horarios
-                for horario_data in clase_data["horarios"]:
-                    horario = HorarioClase(
-                        clase_id=clase.id,
-                        dia_semana=horario_data["dia_semana"],
-                        hora_inicio=horario_data["hora_inicio"],
-                        hora_fin=horario_data["hora_fin"]
-                    )
-                    db.add(horario)
-                
-                db.commit()
-                logger.info(f"Clase creada: {clase_data['nombre']}")
-                
-    except Exception:
+    except Exception as e:
         db.rollback()
+        logger.error(f"Error inicializando clases: {e}")
         raise
     finally:
         db.close()
@@ -495,16 +492,28 @@ def inscribir_en_clase(usuario_id: int, horario_id: int, fecha_clase: str) -> Di
     """Inscribe un usuario en una clase"""
     db: Session = SessionLocal()
     try:
+        logger.info(f"Intentando inscripción: usuario={usuario_id}, horario={horario_id}, fecha={fecha_clase}")
+        
         # Verificar disponibilidad
         horario = db.query(HorarioClase).filter(HorarioClase.id == horario_id).first()
         if not horario:
+            logger.warning(f"Horario no encontrado: {horario_id}")
             return {"error": "Horario no encontrado"}
+        
+        # Convertir fecha string a date object
+        try:
+            fecha_clase_date = datetime.strptime(fecha_clase, "%Y-%m-%d").date()
+        except ValueError as e:
+            logger.error(f"Formato de fecha inválido: {fecha_clase}, error: {e}")
+            return {"error": "Formato de fecha inválido. Use YYYY-MM-DD"}
         
         # Contar inscripciones para esa fecha y horario
         inscritos_count = db.query(InscripcionClase).filter(
             InscripcionClase.horario_id == horario_id,
-            InscripcionClase.fecha_clase == fecha_clase
+            InscripcionClase.fecha_clase == fecha_clase_date
         ).count()
+        
+        logger.info(f"Inscritos encontrados: {inscritos_count}, capacidad: {horario.clase.capacidad_maxima}")
         
         if inscritos_count >= horario.clase.capacidad_maxima:
             return {"error": "Clase llena para esta fecha"}
@@ -513,7 +522,7 @@ def inscribir_en_clase(usuario_id: int, horario_id: int, fecha_clase: str) -> Di
         ya_inscrito = db.query(InscripcionClase).filter(
             InscripcionClase.usuario_id == usuario_id,
             InscripcionClase.horario_id == horario_id,
-            InscripcionClase.fecha_clase == fecha_clase
+            InscripcionClase.fecha_clase == fecha_clase_date
         ).first()
         
         if ya_inscrito:
@@ -523,10 +532,11 @@ def inscribir_en_clase(usuario_id: int, horario_id: int, fecha_clase: str) -> Di
         inscripcion = InscripcionClase(
             usuario_id=usuario_id,
             horario_id=horario_id,
-            fecha_clase=fecha_clase
+            fecha_clase=fecha_clase_date
         )
         db.add(inscripcion)
         db.commit()
+        db.refresh(inscripcion)
         
         logger.info(f"Usuario {usuario_id} inscrito en clase {horario.clase.nombre}")
         
@@ -539,9 +549,11 @@ def inscribir_en_clase(usuario_id: int, horario_id: int, fecha_clase: str) -> Di
             "fecha": fecha_clase
         }
         
-    except Exception:
+    except Exception as e:
         db.rollback()
-        return {"error": "Error al inscribirse en la clase"}
+        logger.error(f"Error inscribiendo usuario {usuario_id} en horario {horario_id}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {"error": f"Error interno al inscribirse en la clase: {str(e)}"}
     finally:
         db.close()
 
@@ -567,5 +579,38 @@ def get_mis_clases(usuario_id: int) -> List[Dict]:
             })
         
         return resultado
+    finally:
+        db.close()
+
+
+#--------Cancelar clase 
+def cancelar_inscripcion(usuario_id: int, inscripcion_id: int) -> Dict:
+    """Cancela una inscripción existente"""
+    db: Session = SessionLocal()
+    try:
+        # Verificar que la inscripción existe y pertenece al usuario
+        inscripcion = db.query(InscripcionClase).filter(
+            InscripcionClase.id == inscripcion_id,
+            InscripcionClase.usuario_id == usuario_id
+        ).first()
+        
+        if not inscripcion:
+            return {"error": "Inscripción no encontrada"}
+        
+        # Eliminar la inscripción
+        db.delete(inscripcion)
+        db.commit()
+        
+        logger.info(f"Usuario {usuario_id} canceló inscripción {inscripcion_id}")
+        
+        return {
+            "success": True,
+            "mensaje": "Clase cancelada exitosamente"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error cancelando inscripción {inscripcion_id}: {str(e)}")
+        return {"error": "Error al cancelar la clase"}
     finally:
         db.close()

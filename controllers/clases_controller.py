@@ -50,3 +50,19 @@ def mis_clases():
     usuario_id = get_jwt_identity()
     clases = get_mis_clases(usuario_id)
     return jsonify(clases)
+
+
+@clases_bp.route("/clases/cancelar/<int:inscripcion_id>", methods=["DELETE"])
+@jwt_required()
+def cancelar_clase(inscripcion_id):
+    """Cancela una inscripción existente"""
+    usuario_id = get_jwt_identity()
+    
+    # Necesitarás crear esta función en services.py
+    from services.services import cancelar_inscripcion
+    resultado = cancelar_inscripcion(usuario_id, inscripcion_id)
+    
+    if resultado.get("error"):
+        return jsonify(resultado), 400
+    
+    return jsonify(resultado)
